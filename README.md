@@ -31,9 +31,9 @@ open it online — nothing to reinstall.
 
 ## Your data
 
-Stored in the browser's localStorage on that one phone, never uploaded.
-**Backup & data → Export a backup file** writes a JSON file you can keep;
-restoring it on a new phone brings the whole log across.
+Stored in the browser's localStorage on that one phone, never uploaded. There
+is no export/import in the app itself, so it lives and dies with that phone's
+browser storage.
 
 ## Files
 
@@ -42,4 +42,4 @@ restoring it on a new phone brings the whole log across.
 | `index.html` | The whole app — markup, styles, logic, and three embedded fonts |
 | `sw.js` | Service worker: offline cache, network-first on navigation so updates land |
 | `manifest.webmanifest` | Makes it installable as an app |
-| `icon-*.png` | Generated flower icons |
+| `icon-*.png` | Generated cup icons |

@@ -73,7 +73,7 @@ h2.disp{font-size:27px;margin:0}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ---------- home logo ---------- */
-.logobar{padding:calc(18px + env(safe-area-inset-top,0px)) 14px 6px;text-align:center}
+.logobar{padding:calc(18px + env(safe-area-inset-top,0px)) 14px 16px;text-align:center}
 .logobar .wordmark{
   display:block;width:100%;font-family:var(--disp);font-size:clamp(58px,19vw,96px);
   letter-spacing:-.01em;color:var(--red);text-transform:uppercase;line-height:.86;
@@ -283,7 +283,6 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
 }
 .toast.on{opacity:1}
 .installbar{display:flex;align-items:center;gap:11px;border:2.5px solid var(--blue);border-radius:16px;padding:12px 14px;font-size:13.5px}
-#btn-wipe{border-color:var(--red);color:var(--red)}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -306,10 +305,7 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
       </div>
     </div>
 
-    <div class="ritualrow">
-      <div class="k">Your ritual so far</div>
-      <button class="ib" id="btn-settings" aria-label="Backup and data">•••</button>
-    </div>
+    <div class="k">Your ritual so far</div>
     <h1 class="disp" id="home-count" style="color:var(--blue);margin-top:5px">0 shots</h1>
 
     <div style="height:18px"></div>
@@ -477,7 +473,7 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
       <div class="swrow" id="bg-swatches"></div>
       <div class="customrow">
         <input type="color" id="b-bg" class="colorinput" value="#1F39E0">
-        <span class="customlab">Custom</span>
+        <span class="customlab">Custom · <span id="bg-hex">#1F39E0</span></span>
       </div>
     </div>
     <div class="colorpick">
@@ -485,7 +481,7 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
       <div class="swrow" id="fg-swatches"></div>
       <div class="customrow">
         <input type="color" id="b-fg" class="colorinput" value="#FFFFFF">
-        <span class="customlab">Custom</span>
+        <span class="customlab">Custom · <span id="fg-hex">#FFFFFF</span></span>
       </div>
     </div>
     <div class="cardpreview" id="bag-preview">
@@ -516,30 +512,6 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
 </section>
 
 <!-- ===================== SETTINGS ===================== -->
-<section id="s-settings" class="screen">
-  <div class="bar">
-    <button class="ib" data-back aria-label="Back">←</button>
-    <div class="ttl">Backup &amp; data</div>
-  </div>
-  <div class="checks"></div>
-  <div class="pad stack" style="padding-top:18px">
-    <p class="note" id="set-stats"></p>
-    <div class="k">Your bags</div>
-    <div id="set-bags" class="stack" style="gap:8px"></div>
-    <button class="btn ghost sm" id="btn-add-bag2">+ Add a bag</button>
-    <div class="checks sm" style="margin:6px 0"></div>
-    <div class="k">Backup</div>
-    <p class="note">Everything lives on this phone only. Export now and then so a lost phone doesn't take your log with it.</p>
-    <button class="btn ghost sm" id="btn-export">Export a backup file</button>
-    <button class="btn ghost sm" id="btn-import">Restore from a backup</button>
-    <input type="file" id="file-import" accept="application/json,.json" hidden>
-    <div class="checks sm" style="margin:6px 0"></div>
-    <button class="btn ghost sm" id="btn-wipe">Erase everything</button>
-    <p class="note">Cafecito · pequeño pero poderoso · works offline, updates itself when you open it online.</p>
-    <div style="height:14px"></div>
-  </div>
-</section>
-
 </div>
 <button class="fab" id="fab" aria-label="Log a new shot">+</button>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -625,7 +597,6 @@ function render(name){
   window.scrollTo(0,0);
   if(name==='home') drawHome();
   if(name==='pick') drawBags();
-  if(name==='settings') drawSettings();
 }
 function go(name){ depth++; history.pushState({screen:name,depth:depth},''); render(name); }
 function swap(name){ history.replaceState({screen:name,depth:depth},''); render(name); }
@@ -895,6 +866,11 @@ $('btn-undo').addEventListener('click',function(){
 
 /* ---------------- bag form: color pickers ---------------- */
 var DEFAULT_BG='#FFC72C', DEFAULT_FG='#14151A';
+function setColorValue(id,hex){
+  var el=$(id);
+  el.value=hex;
+  el.setAttribute('value',hex); /* keeps the native OS picker starting from this exact color, not a stale default */
+}
 function buildSwatchRow(wrapId,inputId,presets){
   var wrap=$(wrapId), input=$(inputId);
   wrap.innerHTML='';
@@ -904,7 +880,7 @@ function buildSwatchRow(wrapId,inputId,presets){
     b.setAttribute('aria-label','Pick '+c);
     b.setAttribute('aria-pressed','false');
     b.addEventListener('click',function(){
-      input.value=c; syncSwatchPressed(); updatePreview();
+      setColorValue(inputId,c); syncSwatchPressed(); updatePreview();
     });
     wrap.appendChild(b);
   });
@@ -924,10 +900,14 @@ function updatePreview(){
   var bits=[$('b-roast').value,$('b-process').value].filter(Boolean);
   pv.querySelector('.top').textContent=$('b-roaster').value.trim()||'Cafecito';
   pv.querySelector('.sb').textContent=bits.join(' · ');
+  $('bg-hex').textContent=bg.toUpperCase();
+  $('fg-hex').textContent=fg.toUpperCase();
 }
 buildSwatchRow('bg-swatches','b-bg',COLOR_PRESETS);
 buildSwatchRow('fg-swatches','b-fg',FONT_PRESETS);
-['b-bg','b-fg'].forEach(function(id){ $(id).addEventListener('input',function(){ syncSwatchPressed(); updatePreview(); }); });
+['b-bg','b-fg'].forEach(function(id){
+  $(id).addEventListener('input',function(){ setColorValue(id,$(id).value); syncSwatchPressed(); updatePreview(); });
+});
 ['b-name','b-roaster','b-process','b-roast'].forEach(function(id){ $(id).addEventListener('input',updatePreview); $(id).addEventListener('change',updatePreview); });
 
 /* ---------------- bag form ---------------- */
@@ -942,8 +922,8 @@ function openBean(id){
   $('b-roast').value=b&&b.roast?b.roast:'Light';
   $('b-date').value=b?b.date||'':'';
   $('b-notes').value=b?b.notes||'':'';
-  $('b-bg').value=b&&b.bgColor?b.bgColor:DEFAULT_BG;
-  $('b-fg').value=b&&b.fgColor?b.fgColor:DEFAULT_FG;
+  setColorValue('b-bg', b&&b.bgColor?b.bgColor:DEFAULT_BG);
+  setColorValue('b-fg', b&&b.fgColor?b.fgColor:DEFAULT_FG);
   syncSwatchPressed(); updatePreview();
   $('btn-del-bean').hidden=!b;
   go('bean');
@@ -976,7 +956,6 @@ $('btn-del-bean').addEventListener('click',function(){
   save(); toast('Bag deleted'); goHome();
 });
 $('btn-add-first').addEventListener('click',function(){ openBean(null); });
-$('btn-add-bag2').addEventListener('click',function(){ openBean(null); });
 $('btn-edit-bean').addEventListener('click',function(){ openBean(capBeanId); });
 
 /* ---------------- history ---------------- */
@@ -1018,50 +997,6 @@ function drawHistory(beanId){
   });
 }
 
-/* ---------------- settings ---------------- */
-$('btn-settings').addEventListener('click',function(){ go('settings'); });
-function drawSettings(){
-  $('set-stats').textContent=db.beans.length+' bag'+(db.beans.length===1?'':'s')+' · '+db.brews.length+' shot'+(db.brews.length===1?'':'s')+' logged.';
-  var wrap=$('set-bags'); wrap.innerHTML='';
-  db.beans.forEach(function(bean){
-    var row=el('div','hrow');
-    var dot=el('div','verdot'); dot.style.background=swatch(bean.id).dot; dot.style.marginRight='2px';
-    row.appendChild(dot);
-    var m=el('div','m'); m.innerHTML='<b>'+esc(bean.name)+'</b> · '+brewsFor(bean.id).length+' shots';
-    row.appendChild(m);
-    var e=el('button','pill','Edit'); e.type='button'; e.style.padding='6px 11px'; e.style.fontSize='9.5px';
-    e.addEventListener('click',function(){ openBean(bean.id); });
-    row.appendChild(e);
-    wrap.appendChild(row);
-  });
-  if(!db.beans.length) wrap.appendChild(el('p','note','No bags yet.'));
-}
-$('btn-export').addEventListener('click',function(){
-  var blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a'); a.href=url; a.download='cafecito-'+new Date().toISOString().slice(0,10)+'.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(function(){ URL.revokeObjectURL(url); },2000);
-  toast('Backup saved to your downloads');
-});
-$('btn-import').addEventListener('click',function(){ $('file-import').click(); });
-$('file-import').addEventListener('change',function(e){
-  var f=e.target.files&&e.target.files[0]; if(!f) return;
-  var r=new FileReader();
-  r.onload=function(){
-    try{
-      var p=JSON.parse(r.result);
-      if(!p||!p.beans||!p.brews) throw 0;
-      if(!confirm('Replace everything on this phone with the backup ('+p.beans.length+' bags, '+p.brews.length+' shots)?')) return;
-      db=p; save(); toast('Backup restored'); goHome();
-    }catch(err){ toast('That file is not a Cafecito backup'); }
-  };
-  r.readAsText(f); e.target.value='';
-});
-$('btn-wipe').addEventListener('click',function(){
-  if(!confirm('Erase every bag and every shot? Export a backup first if you might want them.')) return;
-  db={beans:[],brews:[]}; save(); toast('Everything erased'); goHome();
-});
 $('btn-demo').addEventListener('click',function(){
   var id=uid(), now=Date.now();
   db.beans.push({id:id,name:'Los Sueños',roaster:'Cafecito',process:'Washed',roast:'Light',
