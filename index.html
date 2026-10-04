@@ -227,17 +227,19 @@ input.ti:focus,select.ti:focus{outline:none;border-color:var(--blue)}
   content:"✓";position:absolute;inset:0;display:grid;place-items:center;font-size:16px;font-weight:900;
   color:var(--ink);text-shadow:0 0 3px rgba(255,255,255,.9),0 0 3px rgba(255,255,255,.9);
 }
-.customrow{display:flex;align-items:center;gap:10px}
-.colorinput{
-  width:44px;height:38px;border:3px solid var(--ink);border-radius:10px;padding:2px;background:var(--card);cursor:pointer;flex:none;
+.picker{display:flex;flex-direction:column;gap:10px;margin-top:2px}
+.svwrap{position:relative;width:100%;aspect-ratio:220/132;border:3px solid var(--ink);border-radius:14px;overflow:hidden;touch-action:none;cursor:crosshair}
+.svwrap canvas{display:block;width:100%;height:100%}
+.svthumb{
+  position:absolute;width:20px;height:20px;border-radius:50%;border:2.5px solid #fff;
+  box-shadow:0 0 0 2px var(--ink),0 2px 5px rgba(0,0,0,.35);transform:translate(-50%,-50%);pointer-events:none;left:0;top:0;
 }
-.hexinput{
-  flex:1;min-width:0;border:2.5px solid var(--ink);border-radius:10px;background:var(--card);color:var(--ink);
-  font-family:var(--ui);font-size:14px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
-  padding:9px 12px;appearance:none;
+.huewrap{position:relative;width:100%;height:24px;border:3px solid var(--ink);border-radius:999px;overflow:hidden;touch-action:none;cursor:pointer}
+.huewrap canvas{display:block;width:100%;height:100%}
+.huethumb{
+  position:absolute;top:50%;width:15px;height:28px;border-radius:7px;background:#fff;border:2.5px solid var(--ink);
+  box-shadow:0 2px 5px rgba(0,0,0,.3);transform:translate(-50%,-50%);pointer-events:none;left:0;
 }
-.hexinput:focus{outline:none;border-color:var(--blue)}
-.hexinput.bad{border-color:var(--red);color:var(--red)}
 .cardpreview{
   border:3px solid var(--ink);border-radius:20px;padding:16px 15px;box-shadow:5px 5px 0 var(--ink);
   display:flex;flex-direction:column;gap:7px;
@@ -477,20 +479,20 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
     <div class="colorpick">
       <span class="fllabel">Card color</span>
       <div class="swrow" id="bg-swatches"></div>
-      <div class="customrow">
-        <input type="color" id="b-bg" class="colorinput" value="#1F39E0">
-        <input type="text" id="b-bg-hex" class="hexinput" value="#1F39E0" maxlength="7"
-          autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Card color, as a hex code">
+      <div class="picker">
+        <div class="svwrap"><canvas id="bg-sv" width="220" height="132"></canvas><div class="svthumb" id="bg-sv-thumb"></div></div>
+        <div class="huewrap"><canvas id="bg-hue" width="220" height="22"></canvas><div class="huethumb" id="bg-hue-thumb"></div></div>
       </div>
+      <input type="hidden" id="b-bg" value="#1F39E0">
     </div>
     <div class="colorpick">
       <span class="fllabel">Title color</span>
       <div class="swrow" id="fg-swatches"></div>
-      <div class="customrow">
-        <input type="color" id="b-fg" class="colorinput" value="#FFFFFF">
-        <input type="text" id="b-fg-hex" class="hexinput" value="#FFFFFF" maxlength="7"
-          autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Title color, as a hex code">
+      <div class="picker">
+        <div class="svwrap"><canvas id="fg-sv" width="220" height="132"></canvas><div class="svthumb" id="fg-sv-thumb"></div></div>
+        <div class="huewrap"><canvas id="fg-hue" width="220" height="22"></canvas><div class="huethumb" id="fg-hue-thumb"></div></div>
       </div>
+      <input type="hidden" id="b-fg" value="#FFFFFF">
     </div>
     <div class="cardpreview" id="bag-preview">
       <div class="top">Cafecito</div>
@@ -873,24 +875,114 @@ $('btn-undo').addEventListener('click',function(){
 });
 
 /* ---------------- bag form: color pickers ----------------
-   The hex text field is the source of truth a person can actually see and
-   edit; the native swatch is just a quick-pick convenience. Some mobile
-   browsers' native color dialog doesn't reliably open at the input's
-   current value, so fine-tuning a color never goes through it — typing
-   or nudging the hex field always starts exactly where it was left. */
+   A small HSV picker we draw and own ourselves, instead of the native
+   <input type=color> dialog — whose "custom" hue/saturation view does not
+   reliably reopen at the color it was last left on (a platform limitation,
+   not something a web page can fix). Because we track hue/sat/value
+   ourselves, reopening Edit on a bag restores the exact thumb positions
+   every time. */
 var DEFAULT_BG='#FFC72C', DEFAULT_FG='#14151A';
-var HEX_RE=/^#?[0-9a-fA-F]{6}$/;
 function normHex(v){ v=v.trim(); if(v.charAt(0)!=='#') v='#'+v; return v.toUpperCase(); }
-function setColorValue(id,hex){
+function hsv2rgb(h,s,v){
+  var c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c, rp,gp,bp;
+  if(h<60){rp=c;gp=x;bp=0} else if(h<120){rp=x;gp=c;bp=0} else if(h<180){rp=0;gp=c;bp=x}
+  else if(h<240){rp=0;gp=x;bp=c} else if(h<300){rp=x;gp=0;bp=c} else {rp=c;gp=0;bp=x}
+  return [Math.round((rp+m)*255),Math.round((gp+m)*255),Math.round((bp+m)*255)];
+}
+function rgb2hsv(r,g,b){
+  r/=255; g/=255; b/=255;
+  var max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min, h=0;
+  if(d!==0){
+    if(max===r) h=60*(((g-b)/d)%6);
+    else if(max===g) h=60*((b-r)/d+2);
+    else h=60*((r-g)/d+4);
+  }
+  if(h<0) h+=360;
+  return [h, max===0?0:d/max, max];
+}
+function hexToRgb(hex){ hex=hex.replace('#',''); return [parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)]; }
+function rgbToHex(r,g,b){ return '#'+[r,g,b].map(function(x){ return x.toString(16).padStart(2,'0'); }).join('').toUpperCase(); }
+
+var pickers={};
+function makePicker(prefix){
+  var svCanvas=$(prefix+'-sv'), svCtx=svCanvas.getContext('2d');
+  var hueCanvas=$(prefix+'-hue'), hueCtx=hueCanvas.getContext('2d');
+  var svThumb=$(prefix+'-sv-thumb'), hueThumb=$(prefix+'-hue-thumb');
+  var state={h:0,s:1,v:1};
+
+  function drawSV(){
+    var w=svCanvas.width, h=svCanvas.height;
+    var img=svCtx.createImageData(w,h);
+    for(var y=0;y<h;y++){
+      var v=1-y/(h-1);
+      for(var x=0;x<w;x++){
+        var s=x/(w-1);
+        var rgb=hsv2rgb(state.h,s,v);
+        var i=(y*w+x)*4;
+        img.data[i]=rgb[0]; img.data[i+1]=rgb[1]; img.data[i+2]=rgb[2]; img.data[i+3]=255;
+      }
+    }
+    svCtx.putImageData(img,0,0);
+  }
+  function drawHue(){
+    var w=hueCanvas.width, h=hueCanvas.height;
+    var grad=hueCtx.createLinearGradient(0,0,w,0);
+    [0,60,120,180,240,300,360].forEach(function(hh){
+      var rgb=hsv2rgb(hh,1,1);
+      grad.addColorStop(hh/360,'rgb('+rgb.join(',')+')');
+    });
+    hueCtx.fillStyle=grad; hueCtx.fillRect(0,0,w,h);
+  }
+  function positionThumbs(){
+    svThumb.style.left=(state.s*100)+'%';
+    svThumb.style.top=((1-state.v)*100)+'%';
+    hueThumb.style.left=(state.h/360*100)+'%';
+  }
+  function currentHex(){
+    var rgb=hsv2rgb(state.h,state.s,state.v);
+    return rgbToHex(rgb[0],rgb[1],rgb[2]);
+  }
+  function emit(){
+    setColorValue('b-'+prefix, currentHex(), true);
+    syncSwatchPressed(); updatePreview();
+  }
+  function setFromHex(hex){
+    var rgb=hexToRgb(hex), hsv=rgb2hsv(rgb[0],rgb[1],rgb[2]);
+    state.h=hsv[0]; state.s=hsv[1]; state.v=hsv[2]>0?hsv[2]:1;
+    drawSV(); positionThumbs();
+  }
+  function bindDrag(elx,fn){
+    var active=false;
+    elx.addEventListener('pointerdown',function(e){ active=true; elx.setPointerCapture(e.pointerId); fn(e); e.preventDefault(); });
+    elx.addEventListener('pointermove',function(e){ if(active) fn(e); });
+    elx.addEventListener('pointerup',function(){ active=false; });
+    elx.addEventListener('pointercancel',function(){ active=false; });
+  }
+  bindDrag(svCanvas,function(e){
+    var r=svCanvas.getBoundingClientRect();
+    var cx=Math.max(0,Math.min(r.width,e.clientX-r.left));
+    var cy=Math.max(0,Math.min(r.height,e.clientY-r.top));
+    state.s=r.width?cx/r.width:0; state.v=r.height?1-cy/r.height:1;
+    positionThumbs(); emit();
+  });
+  bindDrag(hueCanvas,function(e){
+    var r=hueCanvas.getBoundingClientRect();
+    var cx=Math.max(0,Math.min(r.width,e.clientX-r.left));
+    state.h=r.width?cx/r.width*360:0;
+    drawSV(); positionThumbs(); emit();
+  });
+  drawHue(); drawSV(); positionThumbs();
+  return {setFromHex:setFromHex};
+}
+function setColorValue(id,hex,fromPicker){
   hex=normHex(hex);
-  var el=$(id);
-  el.value=hex;
-  el.setAttribute('value',hex); /* native swatch's own starting point, for when it IS opened */
-  var hx=$(id+'-hex');
-  if(hx && document.activeElement!==hx) hx.value=hex;
+  var elx=$(id);
+  elx.value=hex;
+  var prefix=id==='b-bg'?'bg':'fg';
+  if(!fromPicker && pickers[prefix]) pickers[prefix].setFromHex(hex);
 }
 function buildSwatchRow(wrapId,inputId,presets){
-  var wrap=$(wrapId), input=$(inputId);
+  var wrap=$(wrapId);
   wrap.innerHTML='';
   presets.forEach(function(c){
     var b=el('button','swbtn'); b.type='button'; b.style.background=c;
@@ -921,27 +1013,8 @@ function updatePreview(){
 }
 buildSwatchRow('bg-swatches','b-bg',COLOR_PRESETS);
 buildSwatchRow('fg-swatches','b-fg',FONT_PRESETS);
-['b-bg','b-fg'].forEach(function(id){
-  $(id).addEventListener('input',function(){ setColorValue(id,$(id).value); syncSwatchPressed(); updatePreview(); });
-});
-['b-bg-hex','b-fg-hex'].forEach(function(hid){
-  var colorId=hid.replace('-hex','');
-  var hx=$(hid);
-  hx.addEventListener('input',function(){
-    if(HEX_RE.test(hx.value)){
-      hx.classList.remove('bad');
-      var h2=normHex(hx.value);
-      $(colorId).value=h2; $(colorId).setAttribute('value',h2); /* skip setColorValue: don't fight the caret */
-      syncSwatchPressed(); updatePreview();
-    }else{
-      hx.classList.add('bad');
-    }
-  });
-  hx.addEventListener('blur',function(){
-    hx.classList.remove('bad');
-    hx.value = HEX_RE.test(hx.value) ? normHex(hx.value) : $(colorId).value.toUpperCase();
-  });
-});
+pickers.bg=makePicker('bg');
+pickers.fg=makePicker('fg');
 ['b-name','b-roaster','b-process','b-roast'].forEach(function(id){ $(id).addEventListener('input',updatePreview); $(id).addEventListener('change',updatePreview); });
 
 /* ---------------- bag form ---------------- */
