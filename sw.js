@@ -1,7 +1,7 @@
 /* Cafecito service worker.
    Navigations are network-first so a new version reaches the phone as soon as
    it is online; everything else is cache-first for instant, offline starts. */
-var VERSION = 'cafecito-v5';
+var VERSION = 'cafecito-v6';
 var ASSETS = [
   './',
   './index.html',

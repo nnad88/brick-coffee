@@ -42,4 +42,4 @@ browser storage.
 | `index.html` | The whole app — markup, styles, logic, and three embedded fonts |
 | `sw.js` | Service worker: offline cache, network-first on navigation so updates land |
 | `manifest.webmanifest` | Makes it installable as an app |
-| `icon-*.png` | Generated cup icons |
+| `icon-*.png` | Generated cup icons (no saucer) |

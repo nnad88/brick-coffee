@@ -229,9 +229,15 @@ input.ti:focus,select.ti:focus{outline:none;border-color:var(--blue)}
 }
 .customrow{display:flex;align-items:center;gap:10px}
 .colorinput{
-  width:44px;height:38px;border:3px solid var(--ink);border-radius:10px;padding:2px;background:var(--card);cursor:pointer;
+  width:44px;height:38px;border:3px solid var(--ink);border-radius:10px;padding:2px;background:var(--card);cursor:pointer;flex:none;
 }
-.customlab{font-family:var(--ui);font-size:11.5px;color:var(--dim);font-weight:600}
+.hexinput{
+  flex:1;min-width:0;border:2.5px solid var(--ink);border-radius:10px;background:var(--card);color:var(--ink);
+  font-family:var(--ui);font-size:14px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+  padding:9px 12px;appearance:none;
+}
+.hexinput:focus{outline:none;border-color:var(--blue)}
+.hexinput.bad{border-color:var(--red);color:var(--red)}
 .cardpreview{
   border:3px solid var(--ink);border-radius:20px;padding:16px 15px;box-shadow:5px 5px 0 var(--ink);
   display:flex;flex-direction:column;gap:7px;
@@ -473,7 +479,8 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
       <div class="swrow" id="bg-swatches"></div>
       <div class="customrow">
         <input type="color" id="b-bg" class="colorinput" value="#1F39E0">
-        <span class="customlab">Custom · <span id="bg-hex">#1F39E0</span></span>
+        <input type="text" id="b-bg-hex" class="hexinput" value="#1F39E0" maxlength="7"
+          autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Card color, as a hex code">
       </div>
     </div>
     <div class="colorpick">
@@ -481,7 +488,8 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
       <div class="swrow" id="fg-swatches"></div>
       <div class="customrow">
         <input type="color" id="b-fg" class="colorinput" value="#FFFFFF">
-        <span class="customlab">Custom · <span id="fg-hex">#FFFFFF</span></span>
+        <input type="text" id="b-fg-hex" class="hexinput" value="#FFFFFF" maxlength="7"
+          autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Title color, as a hex code">
       </div>
     </div>
     <div class="cardpreview" id="bag-preview">
@@ -864,12 +872,22 @@ $('btn-undo').addEventListener('click',function(){
   save(); lastSavedId=null; toast('Shot removed'); goHome();
 });
 
-/* ---------------- bag form: color pickers ---------------- */
+/* ---------------- bag form: color pickers ----------------
+   The hex text field is the source of truth a person can actually see and
+   edit; the native swatch is just a quick-pick convenience. Some mobile
+   browsers' native color dialog doesn't reliably open at the input's
+   current value, so fine-tuning a color never goes through it — typing
+   or nudging the hex field always starts exactly where it was left. */
 var DEFAULT_BG='#FFC72C', DEFAULT_FG='#14151A';
+var HEX_RE=/^#?[0-9a-fA-F]{6}$/;
+function normHex(v){ v=v.trim(); if(v.charAt(0)!=='#') v='#'+v; return v.toUpperCase(); }
 function setColorValue(id,hex){
+  hex=normHex(hex);
   var el=$(id);
   el.value=hex;
-  el.setAttribute('value',hex); /* keeps the native OS picker starting from this exact color, not a stale default */
+  el.setAttribute('value',hex); /* native swatch's own starting point, for when it IS opened */
+  var hx=$(id+'-hex');
+  if(hx && document.activeElement!==hx) hx.value=hex;
 }
 function buildSwatchRow(wrapId,inputId,presets){
   var wrap=$(wrapId), input=$(inputId);
@@ -900,13 +918,29 @@ function updatePreview(){
   var bits=[$('b-roast').value,$('b-process').value].filter(Boolean);
   pv.querySelector('.top').textContent=$('b-roaster').value.trim()||'Cafecito';
   pv.querySelector('.sb').textContent=bits.join(' · ');
-  $('bg-hex').textContent=bg.toUpperCase();
-  $('fg-hex').textContent=fg.toUpperCase();
 }
 buildSwatchRow('bg-swatches','b-bg',COLOR_PRESETS);
 buildSwatchRow('fg-swatches','b-fg',FONT_PRESETS);
 ['b-bg','b-fg'].forEach(function(id){
   $(id).addEventListener('input',function(){ setColorValue(id,$(id).value); syncSwatchPressed(); updatePreview(); });
+});
+['b-bg-hex','b-fg-hex'].forEach(function(hid){
+  var colorId=hid.replace('-hex','');
+  var hx=$(hid);
+  hx.addEventListener('input',function(){
+    if(HEX_RE.test(hx.value)){
+      hx.classList.remove('bad');
+      var h2=normHex(hx.value);
+      $(colorId).value=h2; $(colorId).setAttribute('value',h2); /* skip setColorValue: don't fight the caret */
+      syncSwatchPressed(); updatePreview();
+    }else{
+      hx.classList.add('bad');
+    }
+  });
+  hx.addEventListener('blur',function(){
+    hx.classList.remove('bad');
+    hx.value = HEX_RE.test(hx.value) ? normHex(hx.value) : $(colorId).value.toUpperCase();
+  });
 });
 ['b-name','b-roaster','b-process','b-roast'].forEach(function(id){ $(id).addEventListener('input',updatePreview); $(id).addEventListener('change',updatePreview); });
 
