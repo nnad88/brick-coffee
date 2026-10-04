@@ -1,7 +1,7 @@
-/* Brick Coffee service worker.
+/* Cafecito service worker.
    Navigations are network-first so a new version reaches the phone as soon as
    it is online; everything else is cache-first for instant, offline starts. */
-var VERSION = 'brick-v1';
+var VERSION = 'cafecito-v2';
 var ASSETS = [
   './',
   './index.html',

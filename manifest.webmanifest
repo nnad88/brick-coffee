@@ -1,13 +1,13 @@
 {
-  "name": "Brick Coffee",
-  "short_name": "Brick",
+  "name": "Cafecito",
+  "short_name": "Cafecito",
   "description": "A personal log of specialty coffee bags and the shots pulled from them.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F6F2E8",
-  "theme_color": "#F6F2E8",
+  "background_color": "#F2EDE2",
+  "theme_color": "#F2EDE2",
   "lang": "en",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
