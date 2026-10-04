@@ -69,10 +69,17 @@ h2.disp{font-size:27px;margin:0}
 
 /* ---------- top bar ---------- */
 .bar{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0px)) 18px 12px}
-.bar .wordmark{font-family:var(--disp);font-size:34px;letter-spacing:-.005em;color:var(--blue);text-transform:uppercase;flex:1;line-height:1;
-  text-shadow:2.5px 2.5px 0 var(--yellow)}
 .bar .ttl{font-family:var(--disp);font-size:24px;text-transform:uppercase;flex:1;min-width:0;line-height:1.05;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- home logo ---------- */
+.logobar{padding:calc(18px + env(safe-area-inset-top,0px)) 14px 6px;text-align:center}
+.logobar .wordmark{
+  display:block;width:100%;font-family:var(--disp);font-size:clamp(58px,19vw,96px);
+  letter-spacing:-.01em;color:var(--red);text-transform:uppercase;line-height:.86;
+}
+.ritualrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ritualrow .k{flex:1}
 .ib{
   appearance:none;border:2.5px solid var(--ink);background:var(--card);color:var(--ink);border-radius:999px;
   font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
@@ -188,17 +195,16 @@ h2.disp{font-size:27px;margin:0}
 .step input:focus{outline:none;color:var(--blue)}
 .step input::placeholder{color:var(--rule);opacity:1}
 .step .lab{display:block;font-family:var(--ui);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-top:3px;font-weight:700}
-.step.grind{background:var(--pink)}
-.step.grind .lab{color:rgba(20,21,26,.72)}
-
 .quickcol{display:flex;flex-direction:column;gap:10px;flex:none;width:62px}
 .quickcol .pill{
   flex:1;display:flex;align-items:center;justify-content:center;padding:0;
-  font-family:var(--disp);font-size:18px;border-radius:14px;border:3px solid var(--ink);
+  font-family:var(--disp);font-size:17px;border-radius:14px;border:3px solid var(--ink);
   background:var(--card);box-shadow:3px 3px 0 var(--ink);letter-spacing:0;
 }
 .quickcol .pill:active{background:var(--ink);color:var(--cream);box-shadow:1px 1px 0 var(--ink);transform:translate(2px,2px)}
 .quickcol .pill[aria-pressed="true"]{background:var(--blue);color:#fff;border-color:var(--ink)}
+.quickcol.single .pill{font-size:20px}
+.quickcol.single .pill[disabled]{opacity:.4;pointer-events:none;box-shadow:3px 3px 0 var(--rule)}
 
 .chips{display:flex;gap:8px}
 .chips .pill{flex:1;text-align:center;padding:12px 4px;font-size:10.5px}
@@ -287,9 +293,8 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
 
 <!-- ===================== HOME · recent shots ===================== -->
 <section id="s-home" class="screen on">
-  <div class="bar">
+  <div class="logobar">
     <div class="wordmark">Cafecito</div>
-    <button class="ib" id="btn-settings" aria-label="Backup and data">•••</button>
   </div>
   <div class="checks"></div>
 
@@ -301,7 +306,10 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
       </div>
     </div>
 
-    <div class="k">Your ritual so far</div>
+    <div class="ritualrow">
+      <div class="k">Your ritual so far</div>
+      <button class="ib" id="btn-settings" aria-label="Backup and data">•••</button>
+    </div>
     <h1 class="disp" id="home-count" style="color:var(--blue);margin-top:5px">0 shots</h1>
 
     <div style="height:18px"></div>
@@ -358,18 +366,23 @@ label.fl > span{display:block;font-family:var(--ui);font-size:9.5px;letter-spaci
           <button class="pm" data-step="dose" data-dir="1" aria-label="More dose">+</button>
         </div>
         <div class="quickcol">
-          <button class="pill" type="button" data-dose="18" aria-pressed="false" aria-label="Set dose to 18 grams">18</button>
-          <button class="pill" type="button" data-dose="14" aria-pressed="false" aria-label="Set dose to 14 grams">14</button>
+          <button class="pill" type="button" data-dose="18" aria-pressed="false" aria-label="Set dose to 18 grams">18g</button>
+          <button class="pill" type="button" data-dose="14" aria-pressed="false" aria-label="Set dose to 14 grams">14g</button>
         </div>
       </div>
 
-      <div class="step grind">
-        <button class="pm" data-step="grind" data-dir="-1" aria-label="Lower grind number">−</button>
-        <div class="mid">
-          <input id="f-grind" inputmode="decimal" enterkeyhint="done" aria-label="Grind setting">
-          <span class="lab">Grind setting</span>
+      <div class="doserow">
+        <div class="step">
+          <button class="pm" data-step="grind" data-dir="-1" aria-label="Lower grind number">−</button>
+          <div class="mid">
+            <input id="f-grind" inputmode="decimal" enterkeyhint="done" aria-label="Grind setting">
+            <span class="lab">Grind setting</span>
+          </div>
+          <button class="pm" data-step="grind" data-dir="1" aria-label="Higher grind number">+</button>
         </div>
-        <button class="pm" data-step="grind" data-dir="1" aria-label="Higher grind number">+</button>
+        <div class="quickcol single" id="grind-quickcol">
+          <button class="pill" type="button" id="btn-grind-last" aria-pressed="false" aria-label="Use the last grind setting for this bag">—</button>
+        </div>
       </div>
 
       <div class="step">
@@ -589,9 +602,16 @@ function swatch(id){
   var f=FALLBACK_SW[h%FALLBACK_SW.length];
   return {bg:f.bg, fg:f.fg, dot:f.bg};
 }
+var TARGET_TOL=2; /* seconds outside the window that still count as yellow */
+function timeDist(secs){
+  if(secs<TARGET_LO) return TARGET_LO-secs;
+  if(secs>TARGET_HI) return secs-TARGET_HI;
+  return 0;
+}
 function timeColor(secs){
-  if(secs>=TARGET_LO && secs<=TARGET_HI) return 'var(--green)';
-  if(secs===TARGET_LO-1 || secs===TARGET_HI+1) return 'var(--yellow)';
+  var d=timeDist(secs);
+  if(d===0) return 'var(--green)';
+  if(d<=TARGET_TOL) return 'var(--yellow)';
   return 'var(--red)';
 }
 function tasteWord(t){ return t==='sour'?'sour':(t==='bitter'?'bitter':'just right'); }
@@ -689,7 +709,7 @@ var FIELDS={
   yield:{el:'f-yield',step:0.5,min:0.5,max:900,dec:1},
   secs:{el:'f-secs',step:1,min:1,max:900,dec:0}
 };
-var capBeanId=null, capTaste=null;
+var capBeanId=null, capTaste=null, capLastGrind=null;
 function getV(k){ var v=parseFloat($(FIELDS[k].el).value); return isNaN(v)?null:v; }
 function setV(k,v){
   var f=FIELDS[k];
@@ -698,12 +718,18 @@ function setV(k,v){
   $(f.el).value=fmt(v,f.dec);
   updateRatio();
   if(k==='dose') syncDosePressed();
+  if(k==='grind') syncGrindPressed();
 }
 function syncDosePressed(){
   var v=getV('dose');
   Array.prototype.forEach.call(document.querySelectorAll('[data-dose]'),function(btn){
     btn.setAttribute('aria-pressed', (v!=null && Math.abs(v-Number(btn.dataset.dose))<0.05) ? 'true':'false');
   });
+}
+function syncGrindPressed(){
+  var v=getV('grind'), btn=$('btn-grind-last');
+  if(capLastGrind==null) return;
+  btn.setAttribute('aria-pressed', (v!=null && Math.abs(v-capLastGrind)<0.05) ? 'true':'false');
 }
 function bump(k,dir){ var v=getV(k); if(v==null) v=FIELDS[k].min; setV(k,v+dir*FIELDS[k].step); }
 function updateRatio(){
@@ -721,6 +747,15 @@ function openCapture(beanId,prefill){
   var bean=beanById(beanId); if(!bean) return;
   $('cap-bean').textContent=bean.name||'Bag';
   var last=lastBrew(beanId), src=prefill||last;
+  capLastGrind = last ? last.grind : null;
+  var gbtn=$('btn-grind-last');
+  if(capLastGrind!=null){
+    gbtn.textContent=fmt(capLastGrind,1); gbtn.disabled=false;
+    gbtn.setAttribute('aria-label','Use the last grind setting for this bag, '+fmt(capLastGrind,1));
+  }else{
+    gbtn.textContent='—'; gbtn.disabled=true;
+    gbtn.setAttribute('aria-label','No previous grind setting for this bag yet');
+  }
   setV('dose', src?src.dose:18);
   setV('grind', prefill&&prefill.grind!=null?prefill.grind:(last?last.grind:5));
   setV('yield', src?src.yield:36);
@@ -756,6 +791,10 @@ Array.prototype.forEach.call(document.querySelectorAll('[data-dose]'),function(b
   btn.addEventListener('click',function(){ setV('dose', Number(btn.dataset.dose)); });
 });
 $('f-dose').addEventListener('input',syncDosePressed);
+$('btn-grind-last').addEventListener('click',function(){
+  if(capLastGrind!=null) setV('grind', capLastGrind);
+});
+$('f-grind').addEventListener('input',syncGrindPressed);
 Object.keys(FIELDS).forEach(function(k){
   var inp=$(FIELDS[k].el);
   inp.addEventListener('input',updateRatio);
@@ -781,9 +820,10 @@ function grindDirection(brews){
 }
 function advise(bean,brew,hist){
   var lo=TARGET_LO, hi=TARGET_HI, dir=grindDirection(hist);
-  var want=null, far=0, yellow=(brew.secs===lo-1||brew.secs===hi+1);
-  if(brew.secs<lo-1){ want='finer'; far=(lo-1)-brew.secs; }
-  else if(brew.secs>hi+1){ want='coarser'; far=brew.secs-(hi+1); }
+  var dist=timeDist(brew.secs), yellow=(dist>0&&dist<=TARGET_TOL);
+  var want=null, far=0;
+  if(dist>TARGET_TOL && brew.secs<lo){ want='finer'; far=dist; }
+  else if(dist>TARGET_TOL && brew.secs>hi){ want='coarser'; far=dist; }
   else if(brew.taste==='sour'){ want='finer'; far=2; }
   else if(brew.taste==='bitter'){ want='coarser'; far=2; }
 
@@ -795,8 +835,8 @@ function advise(bean,brew,hist){
   var stepSize=far>8?0.4:0.2, suggest=null;
   if(dir!==0) suggest=Math.max(0,Math.round((brew.grind+(want==='finer'?1:-1)*dir*stepSize)*10)/10);
   var reason;
-  if(brew.secs<lo-1) reason=Math.round(brew.secs)+'s is quicker than your '+lo+'–'+hi+'s window, so the water is rushing through.';
-  else if(brew.secs>hi+1) reason=Math.round(brew.secs)+'s is slower than your '+lo+'–'+hi+'s window, so it is choking.';
+  if(brew.secs<lo) reason=Math.round(brew.secs)+'s is quicker than your '+lo+'–'+hi+'s window, so the water is rushing through.';
+  else if(brew.secs>hi) reason=Math.round(brew.secs)+'s is slower than your '+lo+'–'+hi+'s window, so it is choking.';
   else reason='The time was fine, but '+(brew.taste==='sour'?'sour and thin means it is under-extracted.':'bitter and harsh means it is over-extracted.');
   return {
     verdict: want==='finer'?'Go finer':'Go coarser',
